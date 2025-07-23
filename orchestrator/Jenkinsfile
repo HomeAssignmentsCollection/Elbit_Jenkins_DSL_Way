@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Git branch to use')
+    }
+
+    environment {
+        GIT_REPO = 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git'
+    }
+
+    stages {
+        stage('Trigger: Build Flask API') {
+            steps {
+                echo "\u001B[34m🚀 Starting job: build-flask-api\u001B[0m"
+                echo "Waiting 30 seconds before triggering job..."
+                sleep time: 30, unit: 'SECONDS'
+                build job: 'build-flask-api',
+                      parameters: [string(name: 'GIT_BRANCH', value: params.BRANCH)]
+            }
+        }
+
+        stage('Trigger: Build NGINX Proxy') {
+            steps {
+                echo "\u001B[34m🌐 Starting job: build-nginx-proxy\u001B[0m"
+                echo "Waiting 30 seconds before triggering job..."
+                sleep time: 30, unit: 'SECONDS'
+                build job: 'build-nginx-proxy',
+                      parameters: [string(name: 'GIT_BRANCH', value: params.BRANCH)]
+            }
+        }
+
+        stage('Trigger: Run Local Containers & Verify') {
+            steps {
+                echo "\u001B[34m🧪 Starting job: runner-job\u001B[0m"
+                echo "Waiting 30 seconds before triggering job..."
+                sleep time: 30, unit: 'SECONDS'
+                build job: 'runner-job',
+                      parameters: [string(name: 'GIT_BRANCH', value: params.BRANCH)]
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "\u001B[32m✅ All pipeline jobs finished successfully.\u001B[0m"
+        }
+        failure {
+            echo "\u001B[31m❌ Pipeline failed. Check logs above.\u001B[0m"
+        }
+    }
+}

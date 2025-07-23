@@ -1,0 +1,216 @@
+pipeline {
+    agent {
+        kubernetes {
+            label 'jenkins-docker-agent'
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: docker
+    image: docker:24.0.2
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+        }
+    }
+
+    parameters {
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git', description: 'Git repository URL')
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch')
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Image tag')
+    }
+
+    environment {
+        IMAGE_NAME = "nginx-proxy"
+        FULL_IMAGE = "${IMAGE_NAME}:${params.IMAGE_TAG}"
+        ARTIFACT_FILE = "${IMAGE_NAME}_${params.IMAGE_TAG}.tar"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "[INFO] Cloning code from ${params.GIT_REPO} (${params.GIT_BRANCH})"
+                git branch: params.GIT_BRANCH, url: params.GIT_REPO
+            }
+        }
+
+        stage('Inject Proxy Configuration') {
+            steps {
+                echo "[INFO] Injecting proxy_pass and headers to Nginx config"
+                script {
+                    def config = readFile file: 'nginx-proxy/nginx.conf.template'
+                    def modified = config
+                        .replace('##PROXY_PASS##', 'proxy_pass http://flask-api:5000;')
+                        .replace('##SOURCE_HEADER##', 'proxy_set_header X-Source-IP $remote_addr;')
+
+                    writeFile file: 'nginx-proxy/nginx.conf', text: modified
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    sh 'docker version'
+                    sh "docker build -t ${FULL_IMAGE} ./nginx-proxy"
+                }
+            }
+        }
+
+        stage('Save Docker Image as Artifact') {
+            steps {
+                container('docker') {
+                    sh "docker save -o ${ARTIFACT_FILE} ${FULL_IMAGE}"
+                }
+            }
+        }
+
+        stage('Archive Docker Image') {
+            steps {
+                archiveArtifacts artifacts: "${ARTIFACT_FILE}", fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Successfully built and saved ${FULL_IMAGE}"
+        }
+        failure {
+            echo "❌ Failed to build/save ${FULL_IMAGE}"
+        }
+    }
+}
+
+
+// pipeline {
+//   agent {
+//     kubernetes {
+//       label 'jenkins-docker-agent'
+//       defaultContainer 'jnlp'
+//       yaml """
+// apiVersion: v1
+// kind: Pod
+// spec:
+//   containers:
+//   - name: docker
+//     image: docker:24.0.2
+//     command:
+//     - cat
+//     tty: true
+//     volumeMounts:
+//     - name: docker-sock
+//       mountPath: /var/run/docker.sock
+//   volumes:
+//   - name: docker-sock
+//     hostPath:
+//       path: /var/run/docker.sock
+// """
+//     }
+//   }
+
+//   environment {
+//     IMAGE_NAME = "youruser/nginx-proxy"
+//     TAG = "latest"
+//   }
+
+//   stages {
+//     stage('Checkout') {
+//       steps {
+//         checkout scm
+//       }
+//     }
+
+//     stage('Build Docker Image') {
+//       steps {
+//         container('docker') {
+//           script {
+//             sh "docker version"
+//             sh "docker build -t ${IMAGE_NAME}:${TAG} ./nginx-proxy"
+//           }
+//         }
+//       }
+//     }
+
+//     stage('Push to Docker Hub') {
+//       steps {
+//         container('docker') {
+//           withDockerRegistry([ credentialsId: 'docker-hub-creds', url: '' ]) {
+//             sh "docker push ${IMAGE_NAME}:${TAG}"
+//           }
+//         }
+//       }
+//     }
+//   }
+
+//   post {
+//     success {
+//       echo "✅ Successfully built and pushed ${IMAGE_NAME}:${TAG}"
+//     }
+//     failure {
+//       echo "❌ Build failed for ${IMAGE_NAME}:${TAG}"
+//     }
+//   }
+// }
+
+
+
+// // pipeline {
+// //     agent any
+
+// //     parameters {
+// //         string(name: 'DOCKER_IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+// //         string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'nginx-proxy', description: 'Docker image name')
+// //         string(name: 'DOCKERHUB_USER', defaultValue: 'youruser', description: 'DockerHub username')
+// //     }
+
+// //     environment {
+// //         IMAGE_NAME = "${params.DOCKERHUB_USER}/${params.DOCKER_IMAGE_NAME}:${params.DOCKER_IMAGE_TAG}"
+// //     }
+
+// //     stages {
+// //         stage('Checkout') {
+// //             steps {
+// //                 checkout scm
+// //             }
+// //         }
+
+// //         stage('Build Docker Image') {
+// //             steps {
+// //                 script {
+// //                     docker.build("${env.IMAGE_NAME}", ".")
+// //                 }
+// //             }
+// //         }
+
+// //         stage('Push to Docker Hub') {
+// //             steps {
+// //                 withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+// //                     script {
+// //                         docker.image("${env.IMAGE_NAME}").push()
+// //                     }
+// //                 }
+// //             }
+// //         }
+// //     }
+
+// //     post {
+// //         success {
+// //             echo "✅ Nginx proxy image pushed: ${env.IMAGE_NAME}"
+// //         }
+// //         failure {
+// //             echo "❌ Build failed for ${env.IMAGE_NAME}"
+// //         }
+// //     }
+// // }
+

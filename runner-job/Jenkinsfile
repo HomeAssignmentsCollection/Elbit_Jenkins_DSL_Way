@@ -1,0 +1,144 @@
+pipeline {
+  agent any
+
+  parameters {
+    string(name: 'FLASK_IMAGE', defaultValue: 'flask-api:latest', description: 'Local image name of Flask API')
+    string(name: 'NGINX_IMAGE', defaultValue: 'nginx-proxy:latest', description: 'Local image name of NGINX proxy')
+  }
+
+  environment {
+    NETWORK_NAME = "proxy-net"
+    FLASK_CONTAINER = "flask-api"
+    NGINX_CONTAINER = "nginx-proxy"
+  }
+
+  stages {
+    stage('Start Local Docker Network') {
+      steps {
+        sh 'docker network create ${NETWORK_NAME} || true'
+      }
+    }
+
+    stage('Run Flask API Container') {
+      steps {
+        sh '''
+          docker run -d --rm --name ${FLASK_CONTAINER} \
+            --network ${NETWORK_NAME} \
+            ${FLASK_IMAGE}
+        '''
+      }
+    }
+
+    stage('Run NGINX Proxy Container') {
+      steps {
+        sh '''
+          docker run -d --rm --name ${NGINX_CONTAINER} \
+            --network ${NETWORK_NAME} \
+            -p 8080:80 \
+            ${NGINX_IMAGE}
+        '''
+      }
+    }
+
+    stage('Verify Proxy API') {
+      steps {
+        script {
+          echo '[INFO] Waiting for containers to initialize...'
+          sleep(time: 5, unit: 'SECONDS')
+
+          echo '[INFO] Testing API endpoint via nginx proxy'
+          sh 'curl -s -f http://localhost:8080/api | tee output.txt'
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo '[CLEANUP] Stopping and cleaning up containers and network...'
+      sh '''
+        docker stop ${NGINX_CONTAINER} || true
+        docker stop ${FLASK_CONTAINER} || true
+        docker network rm ${NETWORK_NAME} || true
+      '''
+    }
+    success {
+      echo '✅ Integration test passed. Proxy and API are working.'
+    }
+    failure {
+      echo '❌ Integration test failed.'
+    }
+  }
+}
+
+
+
+// pipeline {
+//     agent any
+
+//     parameters {
+//         string(name: 'API_IMAGE', defaultValue: 'youruser/flask-docker-api:latest', description: 'Flask API image to run')
+//         string(name: 'NGINX_IMAGE', defaultValue: 'youruser/nginx-proxy:latest', description: 'Nginx proxy image to run')
+//     }
+
+//     environment {
+//         NETWORK_NAME     = 'ci-cd-test-network'
+//         FLASK_CONTAINER  = 'flask-api'
+//         NGINX_CONTAINER  = 'nginx-proxy'
+//         NGINX_PORT       = '8080'
+//     }
+
+//     stages {
+//         stage('Create Network') {
+//             steps {
+//                 sh "docker network create ${env.NETWORK_NAME} || true"
+//             }
+//         }
+
+//         stage('Run Flask API') {
+//             steps {
+//                 sh """
+//                 docker run -d --rm \
+//                     --name ${env.FLASK_CONTAINER} \
+//                     --network ${env.NETWORK_NAME} \
+//                     ${params.API_IMAGE}
+//                 """
+//             }
+//         }
+
+//         stage('Run Nginx Proxy') {
+//             steps {
+//                 sh """
+//                 docker run -d --rm \
+//                     --name ${env.NGINX_CONTAINER} \
+//                     --network ${env.NETWORK_NAME} \
+//                     -p ${env.NGINX_PORT}:80 \
+//                     ${params.NGINX_IMAGE}
+//                 """
+//             }
+//         }
+
+//         stage('Verify Communication') {
+//             steps {
+//                 script {
+//                     sleep 5  // Allow containers to start
+//                 }
+//                 sh """
+//                 echo "Checking if Nginx proxy routes to Flask API..."
+//                 curl -s --fail http://localhost:${env.NGINX_PORT}/api/containers | jq '.' || exit 1
+//                 """
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             echo 'Cleaning up containers and network...'
+//             sh """
+//             docker stop ${env.NGINX_CONTAINER} || true
+//             docker stop ${env.FLASK_CONTAINER} || true
+//             docker network rm ${env.NETWORK_NAME} || true
+//             """
+//         }
+//     }
+// }

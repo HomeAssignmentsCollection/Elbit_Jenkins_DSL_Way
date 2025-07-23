@@ -1,0 +1,654 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'flask-api:latest'
+        REPO_URL = 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git'
+        CLONE_DIR = 'src'
+    }
+
+    stages {
+        stage('Simulate Build in Pod') {
+            steps {
+                script {
+                    podTemplate(
+                        label: 'docker-agent',
+                        containers: [
+                            containerTemplate(
+                                name: 'docker',
+                                image: 'alpine:latest',
+                                ttyEnabled: true,
+                                command: 'cat'
+                            )
+                        ]
+                    ) {
+                        node('docker-agent') {
+                            container('docker') {
+
+                                stage('Clone Repository') {
+                                    echo '[SIMULATION] Cloning repository...'
+                                }
+
+                                stage('Build Docker Image') {
+                                    echo '[SIMULATION] Building Docker image...'
+                                }
+
+                                stage('Save Docker Image Artifact') {
+                                    echo '[SIMULATION] Saving Docker image to archive...'
+                                }
+
+                                stage('Push to Registry') {
+                                    echo '[SIMULATION] Pushing image to Docker registry...'
+                                }
+
+                                stage('Deploy to Kubernetes') {
+                                    echo '[SIMULATION] Deploying image to Kubernetes cluster...'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "[✅ SUCCESS] All steps simulated successfully for: ${env.IMAGE_NAME}"
+        }
+        failure {
+            echo "[❌ FAILURE] Simulation failed for: ${env.IMAGE_NAME}"
+        }
+    }
+}
+
+
+
+// pipeline {
+//     agent any
+
+//     environment {
+//         IMAGE_NAME = 'flask-api:latest'
+//         REPO_URL = 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git'
+//         CLONE_DIR = 'src'
+//     }
+
+//     stages {
+//         stage('Build Docker Image in Pod') {
+//             steps {
+//                 script {
+//                     podTemplate(
+//                         label: 'docker-agent',
+//                         containers: [
+//                             containerTemplate(
+//                                 name: 'docker',
+//                                 image: 'docker:28.1.1-cli',
+//                                 ttyEnabled: true,
+//                                 command: 'cat',
+//                                 // Just reference the volume by name
+//                                 mountPath: '/var/run/docker.sock'
+//                             )
+//                         ],
+//                         volumes: [
+//                             hostPathVolume(
+//                                 name: 'docker-sock',
+//                                 hostPath: '/var/run/docker.sock'
+//                             )
+//                         ]
+//                     ) {
+//                         node('docker-agent') {
+//                             container('docker') {
+
+//                                 stage('Clone Repository') {
+//                                     echo "[INFO] Cloning ${env.REPO_URL}"
+//                                     sh "git clone --single-branch --branch main ${env.REPO_URL} ${env.CLONE_DIR}"
+//                                     sh "ls -la ${env.CLONE_DIR}/flask-api"
+//                                 }
+
+//                                 stage('Build Docker Image') {
+//                                     dir("${env.CLONE_DIR}/flask-api") {
+//                                         echo "[INFO] Building Docker image: ${env.IMAGE_NAME}"
+//                                         sh "docker build -t ${env.IMAGE_NAME} ."
+//                                     }
+//                                 }
+
+//                                 stage('Save Docker Image') {
+//                                     dir("${env.CLONE_DIR}/flask-api") {
+//                                         echo "[INFO] Saving Docker image to archive"
+//                                         sh "docker save ${env.IMAGE_NAME} | gzip > ${env.IMAGE_NAME}.tar.gz"
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     post {
+//         success {
+//             echo "[✅ SUCCESS] Image ${env.IMAGE_NAME} built and archived."
+//         }
+//         failure {
+//             echo "[❌ FAILURE] Pipeline failed for image: ${env.IMAGE_NAME}"
+//         }
+//     }
+// }
+
+
+// // pipeline {
+// //     agent any
+
+// //     environment {
+// //         IMAGE_NAME = 'flask-api:latest'
+// //         REPO_URL = 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git'
+// //         CLONE_DIR = 'src'
+// //     }
+
+// //     stages {
+// //         stage('Build in Kubernetes Pod') {
+// //             steps {
+// //                 script {
+// //                     podTemplate(
+// //                         label: 'docker-agent',
+// //                         containers: [
+// //                             containerTemplate(
+// //                                 name: 'docker',
+// //                                 image: 'docker:28.1.1-cli',
+// //                                 ttyEnabled: true,
+// //                                 command: 'cat',
+// //                                 volumeMounts: [
+// //                                     volumeMount(mountPath: '/var/run/docker.sock', name: 'docker-sock')
+// //                                 ]
+// //                             )
+// //                         ],
+// //                         volumes: [
+// //                             hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock', name: 'docker-sock')
+// //                         ]
+// //                     ) {
+// //                         node('docker-agent') {
+// //                             container('docker') {
+// //                                 stage('Clone Repository') {
+// //                                     echo "[INFO] Cloning ${env.REPO_URL} (branch: main)"
+// //                                     sh "git clone --single-branch --branch main ${env.REPO_URL} ${env.CLONE_DIR}"
+// //                                     sh "ls -la ${env.CLONE_DIR}/flask-api"
+// //                                 }
+
+// //                                 stage('Build Docker Image') {
+// //                                     dir("${env.CLONE_DIR}/flask-api") {
+// //                                         echo "[INFO] Building Docker image: ${env.IMAGE_NAME}"
+// //                                         sh "docker build -t ${env.IMAGE_NAME} ."
+// //                                     }
+// //                                 }
+
+// //                                 stage('Save Docker Image Artifact') {
+// //                                     dir("${env.CLONE_DIR}/flask-api") {
+// //                                         echo "[INFO] Saving Docker image to archive"
+// //                                         sh "docker save ${env.IMAGE_NAME} | gzip > ${env.IMAGE_NAME}.tar.gz"
+// //                                     }
+// //                                 }
+// //                             }
+// //                         }
+// //                     }
+// //                 }
+// //             }
+// //         }
+// //     }
+
+// //     post {
+// //         success {
+// //             echo "[✅ SUCCESS] Image ${env.IMAGE_NAME} built and archived."
+// //         }
+// //         failure {
+// //             echo "[❌ FAILURE] Pipeline failed for image: ${env.IMAGE_NAME}"
+// //         }
+// //     }
+// // }
+
+
+
+// // // pipeline {
+// // //     agent any  // Run on any available Jenkins agent
+
+// // //     environment {
+// // //         GIT_REPO   = 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git'  // Hardcoded Git repository
+// // //         GIT_BRANCH = 'main'                                                        // Hardcoded Git branch
+// // //         IMAGE_TAG  = 'flask-api:latest'                                            // Hardcoded Docker image tag
+// // //         APP_DIR    = 'flask-api'                                                   // App folder inside the repo
+// // //     }
+
+// // //     stages {
+// // //         stage('Clone Repository') {
+// // //             steps {
+// // //                 sh '''
+// // //                     echo "[INFO] Cloning ${GIT_REPO} (branch: ${GIT_BRANCH})"
+// // //                     git clone --single-branch --branch "${GIT_BRANCH}" "${GIT_REPO}" src || {
+// // //                         echo "[ERROR] Branch '${GIT_BRANCH}' not found in ${GIT_REPO}";
+// // //                         exit 1;
+// // //                     }
+// // //                     ls -la src/${APP_DIR}
+// // //                 '''
+// // //             }
+// // //         }
+
+// // //         stage('Build Docker Image') {
+// // //             steps {
+// // //                 dir("src/${APP_DIR}") {
+// // //                     sh '''
+// // //                         echo "[INFO] Building Docker image: ${IMAGE_TAG}"
+// // //                         docker build -t ${IMAGE_TAG} .
+// // //                         docker images
+// // //                     '''
+// // //                 }
+// // //             }
+// // //         }
+
+// // //         stage('Save Docker Image Artifact') {
+// // //             steps {
+// // //                 sh '''
+// // //                     echo "[INFO] Saving Docker image as .tar.gz..."
+// // //                     docker save ${IMAGE_TAG} | gzip > flask-api-image.tar.gz
+// // //                 '''
+// // //                 archiveArtifacts artifacts: 'flask-api-image.tar.gz', fingerprint: true
+// // //             }
+// // //         }
+// // //     }
+
+// // //     post {
+// // //         success {
+// // //             echo "[✅ SUCCESS] Image '${IMAGE_TAG}' built and archived"
+// // //         }
+// // //         failure {
+// // //             echo "[❌ FAILURE] Pipeline failed for image: ${IMAGE_TAG}"
+// // //         }
+// // //     }
+// // // }
+
+
+
+
+// // // pipeline {
+// // //     agent {
+// // //         kubernetes {
+// // //             yaml """
+// // // apiVersion: v1
+// // // kind: Pod
+// // // spec:
+// // //   containers:
+// // //   - name: docker
+// // //     image: docker:24.0.2-dind
+// // //     securityContext:
+// // //       privileged: true
+// // //     volumeMounts:
+// // //     - name: docker-graph-storage
+// // //       mountPath: /var/lib/docker
+// // //     - name: docker-socket
+// // //       mountPath: /var/run
+// // //   volumes:
+// // //   - name: docker-graph-storage
+// // //     emptyDir: {}
+// // //   - name: docker-socket
+// // //     hostPath:
+// // //       path: /var/run
+// // // """
+// // //             defaultContainer 'docker'
+// // //         }
+// // //     }
+
+// // //     parameters {
+// // //         string(name: 'GIT_REPO', defaultValue: 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git', description: 'Git repository with the Flask app')
+// // //         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to use (e.g. main or master)')
+// // //         string(name: 'IMAGE_TAG', defaultValue: 'flask-api:latest', description: 'Image tag for the built container')
+// // //     }
+
+// // //     environment {
+// // //         APP_DIR = 'flask-api'
+// // //     }
+
+// // //     stages {
+// // //         stage('Install Git & Clone Repo') {
+// // //             steps {
+// // //                 sh '''
+// // //                   apk add git --no-cache
+// // //                   echo "[INFO] Cloning ${GIT_REPO} branch ${GIT_BRANCH}"
+// // //                   git clone --single-branch --branch "${GIT_BRANCH}" "${GIT_REPO}" src
+// // //                   ls -la src/${APP_DIR}
+// // //                 '''
+// // //             }
+// // //         }
+
+// // //         stage('Build Flask App Docker Image') {
+// // //             steps {
+// // //                 dir("src/${APP_DIR}") {
+// // //                     sh '''
+// // //                       echo "[INFO] Building Docker image: ${IMAGE_TAG}"
+// // //                       docker build -t ${IMAGE_TAG} .
+// // //                       docker images
+// // //                     '''
+// // //                 }
+// // //             }
+// // //         }
+
+// // //         stage('Save Docker Image as Artifact') {
+// // //             steps {
+// // //                 sh '''
+// // //                   echo "[INFO] Saving Docker image as compressed artifact..."
+// // //                   docker save ${IMAGE_TAG} | gzip > flask-api-image.tar.gz
+// // //                 '''
+// // //                 archiveArtifacts artifacts: 'flask-api-image.tar.gz', fingerprint: true
+// // //             }
+// // //         }
+// // //     }
+
+// // //     post {
+// // //         success {
+// // //             echo "[✅ SUCCESS] Flask app built and image saved: ${IMAGE_TAG}"
+// // //         }
+// // //         failure {
+// // //             echo "[❌ FAILURE] Build failed for image: ${IMAGE_TAG}"
+// // //         }
+// // //     }
+// // // }
+
+
+
+// // // // pipeline {
+// // // //     agent {
+// // // //         kubernetes {
+// // // //             defaultContainer 'docker'
+// // // //             yaml """
+// // // // apiVersion: v1
+// // // // kind: Pod
+// // // // spec:
+// // // //   containers:
+// // // //   - name: docker
+// // // //     image: docker:24.0.2-dind
+// // // //     securityContext:
+// // // //       privileged: true
+// // // //     volumeMounts:
+// // // //     - name: docker-graph-storage
+// // // //       mountPath: /var/lib/docker
+// // // //     command:
+// // // //     - dockerd-entrypoint.sh
+// // // //     args:
+// // // //     - --host=unix:///var/run/docker.sock
+// // // //     - --host=tcp://127.0.0.1:2375
+// // // //     tty: true
+// // // //   volumes:
+// // // //   - name: docker-graph-storage
+// // // //     emptyDir: {}
+// // // // """
+// // // //         }
+// // // //     }
+
+// // // //     parameters {
+// // // //         string(name: 'GIT_REPO', defaultValue: 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git', description: 'Git repository with the Flask app')
+// // // //         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to use')
+// // // //         string(name: 'IMAGE_TAG', defaultValue: 'flask-api:latest', description: 'Image tag for the built container')
+// // // //     }
+
+// // // //     environment {
+// // // //         APP_DIR = 'flask-api'
+// // // //     }
+
+// // // //     stages {
+// // // //         stage('Clone Repo') {
+// // // //             steps {
+// // // //                 sh '''
+// // // //                   apk add git --no-cache
+// // // //                   git clone --branch ${GIT_BRANCH} ${GIT_REPO} src
+// // // //                   ls -la src
+// // // //                 '''
+// // // //             }
+// // // //         }
+
+// // // //         stage('Build Flask App Image') {
+// // // //             steps {
+// // // //                 dir("src/${APP_DIR}") {
+// // // //                     sh '''
+// // // //                       echo "[INFO] Building Docker image: ${IMAGE_TAG}"
+// // // //                       docker info
+// // // //                       docker build -t ${IMAGE_TAG} .
+// // // //                       docker images
+// // // //                     '''
+// // // //                 }
+// // // //             }
+// // // //         }
+
+// // // //         stage('Save Docker Image') {
+// // // //             steps {
+// // // //                 sh '''
+// // // //                   echo "[INFO] Saving Docker image..."
+// // // //                   docker save ${IMAGE_TAG} | gzip > flask-api-image.tar.gz
+// // // //                 '''
+// // // //                 archiveArtifacts artifacts: 'flask-api-image.tar.gz', fingerprint: true
+// // // //             }
+// // // //         }
+// // // //     }
+
+// // // //     post {
+// // // //         success {
+// // // //             echo "[✅ SUCCESS] Flask Docker image built and saved: ${IMAGE_TAG}"
+// // // //         }
+// // // //         failure {
+// // // //             echo "[❌ FAILURE] Something went wrong during build"
+// // // //         }
+// // // //     }
+// // // // }
+
+
+// // // // pipeline {
+// // // //     agent {
+// // // //         kubernetes {
+// // // //             yaml """
+// // // // apiVersion: v1
+// // // // kind: Pod
+// // // // spec:
+// // // //   containers:
+// // // //   - name: docker
+// // // //     image: docker:24.0.2-dind
+// // // //     securityContext:
+// // // //       privileged: true
+// // // //     volumeMounts:
+// // // //     - name: docker-graph-storage
+// // // //       mountPath: /var/lib/docker
+// // // //   volumes:
+// // // //   - name: docker-graph-storage
+// // // //     emptyDir: {}
+// // // // """
+// // // //             defaultContainer 'docker'
+// // // //         }
+// // // //     }
+
+// // // //     parameters {
+// // // //         string(name: 'GIT_REPO', defaultValue: 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git', description: 'Git repository with the Flask app')
+// // // //         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to use')
+// // // //         string(name: 'IMAGE_TAG', defaultValue: 'flask-api:latest', description: 'Image tag for the built container')
+// // // //     }
+
+// // // //     environment {
+// // // //         APP_DIR = 'flask-api'
+// // // //     }
+
+// // // //     stages {
+// // // //         stage('Clone Repo') {
+// // // //             steps {
+// // // //                 sh """
+// // // //                   apk add git --no-cache
+// // // //                   git clone --branch ${params.GIT_BRANCH} ${params.GIT_REPO} src
+// // // //                   ls -la src
+// // // //                 """
+// // // //             }
+// // // //         }
+
+// // // //         stage('Build Flask App Image') {
+// // // //             steps {
+// // // //                 dir('src/flask-api') {
+// // // //                     sh """
+// // // //                       echo '[INFO] Building Flask app Docker image...'
+// // // //                       docker build -t ${params.IMAGE_TAG} .
+// // // //                       docker images
+// // // //                     """
+// // // //                 }
+// // // //             }
+// // // //         }
+
+// // // //         stage('Save Docker Image Locally') {
+// // // //             steps {
+// // // //                 sh """
+// // // //                   echo '[INFO] Saving Docker image as artifact...'
+// // // //                   docker save ${params.IMAGE_TAG} | gzip > flask-api-image.tar.gz
+// // // //                 """
+// // // //                 archiveArtifacts artifacts: 'flask-api-image.tar.gz', fingerprint: true
+// // // //             }
+// // // //         }
+// // // //     }
+
+// // // //     post {
+// // // //         success {
+// // // //             echo "[SUCCESS] Flask app built and image saved: ${params.IMAGE_TAG}"
+// // // //         }
+// // // //         failure {
+// // // //             echo "[FAILURE] Failed to build Flask app"
+// // // //         }
+// // // //     }
+// // // // }
+
+
+
+// // // // // pipeline {
+// // // // //     agent {
+// // // // //         kubernetes {
+// // // // //             label 'jenkins-docker-agent'
+// // // // //             defaultContainer 'jnlp'
+// // // // //             yaml """
+// // // // // apiVersion: v1
+// // // // // kind: Pod
+// // // // // spec:
+// // // // //   containers:
+// // // // //   - name: docker
+// // // // //     image: docker:24.0.2
+// // // // //     command:
+// // // // //     - cat
+// // // // //     tty: true
+// // // // //     volumeMounts:
+// // // // //     - name: docker-sock
+// // // // //       mountPath: /var/run/docker.sock
+// // // // //   volumes:
+// // // // //   - name: docker-sock
+// // // // //     hostPath:
+// // // // //       path: /var/run/docker.sock
+// // // // // """
+// // // // //         }
+// // // // //     }
+
+// // // // //     parameters {
+// // // // //         string(name: 'GIT_REPO', defaultValue: 'https://github.com/HomeAssignment2025/DSL_Jenkins_CICD.git', description: 'Git repository URL')
+// // // // //         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch')
+// // // // //         string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Image tag')
+// // // // //     }
+
+// // // // //     environment {
+// // // // //         IMAGE_NAME = "flask-api"
+// // // // //         FULL_IMAGE = "${IMAGE_NAME}:${params.IMAGE_TAG}"
+// // // // //         ARTIFACT_FILE = "${IMAGE_NAME}_${params.IMAGE_TAG}.tar"
+// // // // //     }
+
+// // // // //     stages {
+// // // // //         stage('Checkout') {
+// // // // //             steps {
+// // // // //                 echo "[INFO] Cloning code from ${params.GIT_REPO} (${params.GIT_BRANCH})"
+// // // // //                 git branch: params.GIT_BRANCH, url: params.GIT_REPO
+// // // // //             }
+// // // // //         }
+
+// // // // //         stage('Build Docker Image') {
+// // // // //             steps {
+// // // // //                 container('docker') {
+// // // // //                     sh 'docker version'
+// // // // //                     sh "docker build -t ${FULL_IMAGE} ./flask-api"
+// // // // //                 }
+// // // // //             }
+// // // // //         }
+
+// // // // //         stage('Save Docker Image as Artifact') {
+// // // // //             steps {
+// // // // //                 container('docker') {
+// // // // //                     sh "docker save -o ${ARTIFACT_FILE} ${FULL_IMAGE}"
+// // // // //                 }
+// // // // //             }
+// // // // //         }
+
+// // // // //         stage('Archive Docker Image') {
+// // // // //             steps {
+// // // // //                 archiveArtifacts artifacts: "${ARTIFACT_FILE}", fingerprint: true
+// // // // //             }
+// // // // //         }
+// // // // //     }
+
+// // // // //     post {
+// // // // //         success {
+// // // // //             echo "✅ Successfully built and saved ${FULL_IMAGE}"
+// // // // //         }
+// // // // //         failure {
+// // // // //             echo "❌ Failed to build/save ${FULL_IMAGE}"
+// // // // //         }
+// // // // //     }
+// // // // // }
+
+
+
+// // // // // // // ToDO
+// // // // // // // Check  - Docker daemon 
+// // // // // // // SET - Docker Hub credentials с ID: dockerhub-creds
+
+// // // // // // pipeline {
+// // // // // //     agent any
+
+// // // // // //     parameters {
+// // // // // //         string(name: 'DOCKER_IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+// // // // // //         string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'flask-docker-api', description: 'Image name')
+// // // // // //         string(name: 'DOCKERHUB_USER', defaultValue: 'youruser', description: 'DockerHub username')
+// // // // // //     }
+
+// // // // // //     environment {
+// // // // // //         IMAGE_NAME = "${params.DOCKERHUB_USER}/${params.DOCKER_IMAGE_NAME}:${params.DOCKER_IMAGE_TAG}"
+// // // // // //     }
+
+// // // // // //     stages {
+// // // // // //         stage('Checkout') {
+// // // // // //             steps {
+// // // // // //                 checkout scm
+// // // // // //             }
+// // // // // //         }
+
+// // // // // //         stage('Build Docker Image') {
+// // // // // //             steps {
+// // // // // //                 script {
+// // // // // //                     docker.build("${env.IMAGE_NAME}", ".")
+// // // // // //                 }
+// // // // // //             }
+// // // // // //         }
+
+// // // // // //         stage('Push to Docker Hub') {
+// // // // // //             steps {
+// // // // // //                 withDockerRegistry(credentialsId: 'dockerhub-creds', url: '') {
+// // // // // //                     script {
+// // // // // //                         docker.image("${env.IMAGE_NAME}").push()
+// // // // // //                     }
+// // // // // //                 }
+// // // // // //             }
+// // // // // //         }
+// // // // // //     }
+
+// // // // // //     post {
+// // // // // //         success {
+// // // // // //             echo "✅ Flask image pushed: ${env.IMAGE_NAME}"
+// // // // // //         }
+// // // // // //         failure {
+// // // // // //             echo "❌ Build failed for ${env.IMAGE_NAME}"
+// // // // // //         }
+// // // // // //     }
+// // // // // // }
+

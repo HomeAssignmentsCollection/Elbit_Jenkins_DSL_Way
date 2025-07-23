@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  flask-api:
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./flask-api:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: python app.py
+
+  nginx-proxy:
+    volumes:
+      - ./nginx-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
