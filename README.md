@@ -82,25 +82,25 @@ If you see errors, fix them and recommit. This helps keep the codebase clean and
 
 ## 🛡️ DevSecOps & Security Best Practices
 
-- Non-root контейнеры, drop capabilities, read-only rootfs
+- Non-root containers, drop capabilities, read-only rootfs
 - RBAC, NetworkPolicy, resource quotas, namespace isolation
-- ConfigMap и Secrets для конфигурации
-- Admission control (OPA/Kyverno — рекомендовано)
-- Image scanning (Trivy, Dockle — рекомендовано)
+- ConfigMap and Secrets for configuration
+- Admission control (OPA/Kyverno — recommended)
+- Image scanning (Trivy, Dockle — recommended)
 - Health endpoints, probes, graceful degradation
 
-Подробнее: [SECURITY.md](SECURITY.md)
+See more: [SECURITY.md](SECURITY.md)
 
 ---
 
 ## 📈 Observability: Monitoring, Logging, Tracing
 
-- **Monitoring**: Prometheus + Grafana + Alertmanager (Helm chart, автоматизация)
-- **Logging**: stdout + shipping to EFK/Opensearch (рекомендовано)
-- **Tracing**: Jaeger/Tempo (рекомендовано)
-- Health endpoints, probes, алерты
+- **Monitoring**: Prometheus + Grafana + Alertmanager (Helm chart, automation)
+- **Logging**: stdout + shipping to EFK/Opensearch (recommended)
+- **Tracing**: Jaeger/Tempo (recommended)
+- Health endpoints, probes, alerts
 
-Подробнее:
+See more:
 - [MONITORING.md](docs/MONITORING.md)
 - [LOGGING.md](docs/LOGGING.md)
 - [TRACING.md](docs/TRACING.md)
@@ -113,11 +113,11 @@ If you see errors, fix them and recommit. This helps keep the codebase clean and
 - Rollback: kubectl rollout undo, Helm rollback
 - Troubleshooting: kubectl logs, describe, events, Prometheus/Grafana
 
-Подробнее: [RUNBOOKS.md](docs/RUNBOOKS.md)
+See more: [RUNBOOKS.md](docs/RUNBOOKS.md)
 
 ---
 
-## 📚 Архитектура и документация
+## 📚 Architecture and Documentation
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — diagrams, flow description, CI/CD, security
 - [RUNBOOKS.md](docs/RUNBOOKS.md) — launch, update, recovery, troubleshooting
